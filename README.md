@@ -1,19 +1,25 @@
 # 台灣專利查詢分析系統
 
-這是一個台灣專利查詢與 AI 輔助分析 Demo，可輸入台灣專利號或上傳文字型 PDF，擷取專利內容後產生 Claim Chart、侵權風險評估與 JSON 報告。
+這是一個 Streamlit 版台灣專利查詢與 AI 輔助分析 Demo。使用者可輸入台灣專利號或上傳文字型 PDF，系統會擷取專利內容，並根據產品 / 技術描述產生 Claim Chart、侵權風險初評與 JSON 報告。
 
-## Streamlit 版使用方式
+## 使用方式
 
-建議使用 Streamlit 版：
+安裝依賴：
 
 ```bash
 pip install -r requirements-streamlit.txt
-streamlit run streamlit_app.py --server.port 8501
 ```
 
-Windows 可直接執行：
+啟動服務：
+
+```bash
+streamlit run streamlit_app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true
+```
+
+Windows 也可直接執行：
 
 ```text
+install-streamlit.bat
 start-streamlit.bat
 ```
 
@@ -23,41 +29,53 @@ start-streamlit.bat
 http://localhost:8501/
 ```
 
-## Node 版使用方式
+## 操作流程
 
-保留早期 Node/HTML MVP：
+### 1. 專利號查詢
 
-```bash
-node server.js
-```
-
-啟動後開啟 `http://localhost:8005/`。
-
-Windows 可直接執行：
+可輸入台灣申請案號、公開號或公告號，例如：
 
 ```text
-start.bat
+I584190
+I624608
+I906771
 ```
 
-啟動後開啟：
+系統會自動嘗試台灣常見格式，例如輸入 `I584190` 時，會嘗試：
 
 ```text
-http://localhost:8005/
+I584190
+TWI584190B
+TWI584190
 ```
 
-## 台灣專利查詢測試
+若 Google Patents 可取得摘要或 Claims，系統會使用真實公開資料。若查不到或資料不足，系統會改用 DEMO 資料。
 
-目前系統以台灣專利為主。可輸入申請案號、公開號或公告號，例如：
+### 2. PDF 上傳
 
-- `I584190`
-- `I624608`
-- `I906771`
-- `M123456`
-- `D123456`
+可上傳文字型 PDF，系統會擷取 PDF 文字後進行分析。
 
-系統會自動嘗試多種台灣常見格式，例如輸入 `I606827` 時會嘗試 `I606827`、`TWI606827B`、`TWI606827`。若沒有找到、網路不可用、或抓不到摘要與 Claims，畫面會顯示 `DEMO 範例資料`，並自動使用範例內容讓後續分析流程可以繼續。
+目前不支援掃描型 PDF OCR。
 
-台灣 TIPO 的公開資訊查詢頁包含檢核碼，後端不會自動繞過驗證碼。輸入 TIPO 格式號碼時，系統會附上官方查詢頁連結並使用 DEMO 資料。
+### 3. 產品 / 技術描述
+
+輸入要比對的產品、系統或技術內容，例如：
+
+```text
+本產品是一套伺服器例外處理系統，當應用程式發生錯誤時，會捕捉例外事件，記錄錯誤上下文，並依照預設規則產生修復流程。
+```
+
+### 4. 開始分析
+
+按下「開始分析」後，系統會產生：
+
+- Claim 技術要件拆解
+- Claim Chart
+- 符合 / 部分符合 / 不符合判斷
+- 侵權風險高 / 中 / 低初評
+- 證據高光
+- 迴避設計建議
+- JSON 報告下載
 
 ## 已完成
 
@@ -70,28 +88,20 @@ http://localhost:8005/
 - Claim Chart
 - 侵權風險評估
 - JSON 報告下載
-- 輸入區、分析區、報告區三欄式版面
-- 專利號輸入與資料抓取流程雛形
-- 無套件 Node 後端 `/api/patent`，可嘗試抓取 Google Patents 公開資料
-- 找不到專利、外網失敗或資料不足時，自動回傳 DEMO 資料
-- PDF 上傳與文字解析流程
-- 摘要與 Claims 擷取
-- Claim element 拆解
-- Qwen / Llama 模型設定欄位
-- 可接外部模型 endpoint 的分析流程
-- 本機 fallback 分析
-- Claim Chart
-- 侵權風險評估
-- 改善建議
-- 本機 localStorage 向量庫
-- 相似專利搜尋雛形
-- 報告列印成 PDF
-- JSON 匯出
+
+## 限制與注意事項
+
+- 本系統為 AI 輔助分析工具，不構成法律意見。
+- 目前主要資料來源為 Google Patents 台灣資料。
+- TIPO 官方查詢頁含檢核碼，未自動爬取。
+- PDF 目前僅支援文字型 PDF，不支援掃描型 OCR。
+- 若啟用 Qwen / Ollama，需自行啟動 Ollama 並安裝模型。
+- 未啟用 Qwen / Ollama 時，系統會使用本機 fallback 分析，速度較快但精準度較低。
 
 ## 後續正式化建議
 
-1. 若要正式商用，建議將 `fetchPatentData` / `/api/patent` 改接 TIPO、USPTO、EPO 等官方 API 或授權資料庫。
-2. 將 PDF 解析與 OCR 搬到後端，避免大型檔案卡住瀏覽器。
-3. 將 Qwen API Key 放在後端，不要留在前端。
-4. 將目前 localStorage 向量庫改為 Qdrant、Milvus、pgvector 或 Chroma。
-5. 報告輸出可改由後端產生正式 PDF。
+1. 串接 TIPO 官方 API 或授權資料庫。
+2. 加入掃描型 PDF OCR。
+3. 加入使用者帳號、權限與歷史紀錄。
+4. 匯出正式 PDF / Word 報告。
+5. 後續若要做大量相似專利搜尋，再導入向量資料庫。
