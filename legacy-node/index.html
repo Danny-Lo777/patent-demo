@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>專利查詢分析系統</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Patent Intelligence Workspace</p>
+        <h1>專利查詢分析系統</h1>
+      </div>
+      <div class="status-pill" id="storageStatus">本機向量庫 0 筆</div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel input-panel" aria-labelledby="input-title">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Input</p>
+            <h2 id="input-title">輸入區</h2>
+          </div>
+          <span class="step-badge">1</span>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="輸入方式">
+          <button class="tab active" id="tabPatent" type="button">專利號</button>
+          <button class="tab" id="tabPdf" type="button">PDF</button>
+        </div>
+
+        <div class="tab-page active" id="patentPage">
+          <label class="field">
+            <span>查詢來源</span>
+            <select id="patentSource">
+              <option value="tw" selected>台灣專利優先</option>
+              <option value="auto">自動判斷</option>
+              <option value="google">Google Patents 輔助查詢</option>
+              <option value="us">美國 USPTO</option>
+              <option value="ep">歐洲 EPO</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>台灣專利查詢號碼</span>
+            <input id="patentNumber" type="text" placeholder="可輸入申請案號、公開號、公告號，例如 105126084、201639562、I606827" />
+          </label>
+          <button class="primary-action" id="fetchPatentBtn" type="button">抓取專利資料</button>
+          <p class="hint">系統會盡量用台灣常見格式搜尋；若 TIPO 官方頁需要檢核碼或公開資料查不到，會提供官方連結並載入 DEMO。</p>
+        </div>
+
+        <div class="tab-page" id="pdfPage">
+          <label class="dropzone" for="pdfFile">
+            <input id="pdfFile" type="file" accept="application/pdf" />
+            <span>上傳專利 PDF</span>
+            <small>支援文字型 PDF；掃描檔可在後端接 OCR。</small>
+          </label>
+          <button class="secondary-action" id="loadSampleBtn" type="button">載入範例內容</button>
+        </div>
+
+        <label class="field">
+          <span>產品 / 技術描述</span>
+          <textarea id="productText" rows="7" placeholder="貼上欲比對的產品規格、技術說明或競品描述。"></textarea>
+        </label>
+
+        <details class="settings">
+          <summary>模型與分析設定</summary>
+          <label class="field">
+            <span>模型</span>
+            <select id="modelName">
+              <option value="qwen2.5">Qwen 2.5</option>
+              <option value="qwen3">Qwen 3</option>
+              <option value="llama">Llama</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Qwen API Endpoint</span>
+            <input id="apiEndpoint" type="url" placeholder="例如 http://localhost:11434/api/generate 或你的後端 API" />
+          </label>
+          <label class="field">
+            <span>API Key（可留空）</span>
+            <input id="apiKey" type="password" placeholder="建議正式版放後端保管" />
+          </label>
+        </details>
+      </section>
+
+      <section class="panel analysis-panel" aria-labelledby="analysis-title">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Analysis</p>
+            <h2 id="analysis-title">分析區</h2>
+          </div>
+          <span class="step-badge">2</span>
+        </div>
+
+        <div class="action-row">
+          <button class="primary-action" id="analyzeBtn" type="button">開始分析</button>
+          <button class="secondary-action" id="saveVectorBtn" type="button">存入向量庫</button>
+          <button class="secondary-action" id="searchSimilarBtn" type="button">搜尋相似專利</button>
+        </div>
+
+        <div class="progress" id="progress">
+          <span></span>
+          <p>等待輸入資料</p>
+        </div>
+
+        <div class="analysis-grid">
+          <article class="result-card meta-card wide">
+            <h3>專利基本資料</h3>
+            <dl id="metaList"></dl>
+          </article>
+          <article class="result-card">
+            <h3>專利摘要</h3>
+            <p id="summaryOutput" class="empty">尚未分析</p>
+          </article>
+          <article class="result-card wide">
+            <h3>Claims 拆解</h3>
+            <div id="claimsOutput" class="claims-list empty">尚未擷取 Claims</div>
+          </article>
+          <article class="result-card wide">
+            <h3>相似專利</h3>
+            <div id="similarOutput" class="empty">尚未搜尋</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel report-panel" aria-labelledby="report-title">
+        <div class="panel-header">
+          <div>
+            <p class="section-kicker">Report</p>
+            <h2 id="report-title">報告區</h2>
+          </div>
+          <span class="step-badge">3</span>
+        </div>
+
+        <div class="action-row">
+          <button class="primary-action" id="exportPdfBtn" type="button">輸出 PDF 報告</button>
+          <button class="secondary-action" id="downloadJsonBtn" type="button">下載 JSON</button>
+          <button class="secondary-action danger" id="clearBtn" type="button">清除</button>
+        </div>
+
+        <article class="report-preview" id="reportPreview">
+          <h3>Claim Chart</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Claim Element</th>
+                  <th>產品對照</th>
+                  <th>判斷</th>
+                  <th>理由</th>
+                </tr>
+              </thead>
+              <tbody id="claimChartBody">
+                <tr>
+                  <td colspan="4" class="empty-cell">尚未產生 Claim Chart</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>侵權風險評估</h3>
+          <div class="risk-box" id="riskBox">
+            <strong>尚未評估</strong>
+            <p>完成分析後會顯示風險等級、理由與改善建議。</p>
+          </div>
+
+          <h3>改善建議</h3>
+          <ul class="recommendations" id="recommendations">
+            <li>尚未產生建議</li>
+          </ul>
+        </article>
+      </section>
+    </main>
+
+    <template id="printTemplate">
+      <html>
+        <head>
+          <title>專利分析報告</title>
+          <link rel="stylesheet" href="./styles.css" />
+        </head>
+        <body class="print-body"></body>
+      </html>
+    </template>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

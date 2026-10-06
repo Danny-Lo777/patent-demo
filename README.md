@@ -29,6 +29,34 @@ start-streamlit.bat
 http://localhost:8501/
 ```
 
+## 舊版 Node/HTML DEMO
+
+本 repo 也保留早期 Node/HTML 版畫面，放在 `legacy-node/`。
+
+啟動方式：
+
+```bash
+cd legacy-node
+node server.js
+```
+
+Windows 也可直接執行：
+
+```text
+legacy-node\start.bat
+```
+
+啟動後開啟：
+
+```text
+http://localhost:8005/
+```
+
+兩個版本用途：
+
+- Streamlit 版：目前主要維護版本，支援台灣專利查詢、PDF 上傳、Qwen/Ollama 設定與報告分析。
+- Node/HTML 舊版：保留早期三欄式操作畫面與前端互動 DEMO，方便展示原本版型。
+
 ## 操作流程
 
 ### 1. 專利號查詢
